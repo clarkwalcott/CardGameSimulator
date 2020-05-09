@@ -24,10 +24,15 @@ namespace FinalProject
         {
             InitializeComponent();
 
-            //Card mycard = new Card(8, "Spades");
-            //mycard.displayCard();
+            int numPlayers = 2;
 
-            Game myGame = new ERS();
+            Loaded += delegate
+            {
+                //Card mycard = new Card(8, "Spades");
+                //mycard.displayCard();
+
+                Game myGame = new ERS(numPlayers, playingField);
+            };
         }
     }
 }

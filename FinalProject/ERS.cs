@@ -3,6 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Media;
+using System.Windows.Shapes;
 
 namespace FinalProject
 {
@@ -18,7 +22,8 @@ namespace FinalProject
      *      1. All cards are dealt face-down in a clockwise circle starting with the player immediately to the dealer's left. Players may not look at their cards.
      *      2. Starting with the player left of the dealer, a card is taken from the top of their pile and placed face-up in the middle of the table.
      *      3. If the card played is a number card (2-10), the next player puts down a card. This continues until a face card or an ace is played.
-     *      4. When a face card or ace is played, the next person in the sequence must play another face card or an ace in order for play to continue.
+     *      4. When a face card (Ace included) is played, the next person in the sequence must play another face card (or Ace) in order for play to continue.
+     *          a. Allotted chance (plays to get another face card): Jack - 1, Queen - 2, King - 3, Ace - 4
      *      5. If they do not do so within their allotted chance, the person who played the last face card or ace wins the pile. The winner begins the next round of play.
      *      6. The only thing that overrides the face card or an ace is the slap rule. The first person to slap the pile of cards when the slap rule is in effect wins the pile.
      *      Slap Rules:
@@ -27,16 +32,80 @@ namespace FinalProject
      */
     class ERS : Game
     {
-        private Queue<Card> playingField;
-        private int cardsLeft = -1;
-        private int turnResult = -1;                // 1 if stack is won, 0 if lost, -1 otherwise       
+        private Queue<Card> pile;
+        private int cardsLeft = -1;                 // Cards left for face card play
+        private int turnResult = -1;                // 1 if stack is won, 0 if lost, -1 otherwise   
+        Random rnd = new Random();
 
-        public ERS():base(GameType.ERS)
+
+        public ERS(int numPlayers, Canvas playingField):base(GameType.ERS, numPlayers, playingField)
         {
-            playingField = new Queue<Card>();
+            pile = new Queue<Card>();
             Deal();
             Console.WriteLine("Starting Game...");
-            GameStart();
+            setupPlayingField();
+            //GameStart();
+        }
+
+        // Seats the players around the playing field
+        public override void setupPlayingField()
+        {
+            Ellipse table = playingField.FindName("table") as Ellipse;      // Would like to refactor later. Will break if table is renamed in XAML
+
+            // Handles design
+            playingField.Background = Brushes.Black;
+            table.Fill = Brushes.Green;
+            List<SolidColorBrush> colors = new List<SolidColorBrush>() { Brushes.Red, Brushes.Blue, Brushes.Yellow, Brushes.Orange, Brushes.Indigo, Brushes.Violet };
+            colors.Shuffle<SolidColorBrush>(rnd);
+
+            // Handles setup of player pieces and card pile
+            double height = 40.0;
+            double width = 40.0;
+
+            double radius = (table.ActualWidth / 2);
+            double border = 1;
+            double angle = ((2 * Math.PI) / numPlayers);
+
+            // Where the circle starts
+            double x_naught = table.Margin.Left + radius - (width / 2) + border;
+            double y_naught = table.Margin.Top + radius - (height/2) + border;
+
+            double x = x_naught, y = y_naught;
+
+            for (int i = 0; i < numPlayers; i++)
+            {
+                Ellipse player = new Ellipse() { Stroke = colors[i], Fill = colors[i], Width = width, Height = height };
+                Label playerLabel = new Label() { Width = 2 * width, Height = height };
+                ListBox pileListBox = new ListBox() { Width = 4 * width, Height = 4 * height };
+
+                //Console.WriteLine(Math.Sin(i * angle));
+                //Console.WriteLine(Math.Cos(i * angle));
+                double sin = Math.Sin(i * angle);
+                double cos = Math.Cos(i * angle);
+                x = x_naught + (sin * radius);
+                y = y_naught + (cos * radius);
+                //Console.WriteLine(x);
+                //Console.WriteLine(y);
+                //Console.WriteLine();
+
+                player.Margin = new Thickness(x, y, 0, 0);
+                player.Name = "Player" + (i + 1).ToString();
+
+                playerLabel.Margin = new Thickness(x - ((width/2)*sin) - 5, y - (height*cos), 0, 0);
+                playerLabel.Content = player.Name;
+                playerLabel.Name = "label" + (i + 1).ToString();
+
+                pileListBox.Margin = new Thickness(x_naught - pileListBox.Width/2 + 20, y_naught - pileListBox.Height/2, 0, 0);
+                pileListBox.FontSize = 20;
+                pileListBox.Background = Brushes.PaleVioletRed;
+                pileListBox.HorizontalContentAlignment = HorizontalAlignment.Center;
+                pileListBox.VerticalContentAlignment = VerticalAlignment.Center;
+
+                playingField.Children.Add(player);
+                playingField.Children.Add(playerLabel);
+                playingField.Children.Add(pileListBox);
+                playingField.UpdateLayout();                 // If we don't update the window first, the ActualHeight and ActualWidth values of the window will be zero
+            }
         }
 
         // Deals the cards out between the players
@@ -112,7 +181,7 @@ namespace FinalProject
         private int PlayCard(Queue<Card> hand)
         {
             Card card = null;
-            int value = 0, suit = 0;
+            int value = 0;
             Dictionary<int, int> faceCards = new Dictionary<int, int>() 
             { 
                 { 11, 1 }, { 12, 2 }, { 13, 3 }, { 14, 4 } 
@@ -123,13 +192,13 @@ namespace FinalProject
                 //Console.WriteLine("Cards left: " + hand.Count());
                 card = hand.Dequeue();
                 value = card.Value;
-                playingField.Enqueue(card);
+                pile.Enqueue(card);
                 Console.Write("Played: ");
                 card.displayCard();
             }
             try
             {
-                if (checkSlap(playingField.Reverse<Card>().Take<Card>(3)))
+                if (checkSlap(pile.Reverse<Card>().Take<Card>(3)))
                 {
                     Console.WriteLine("Slapped!");
                     return 1;
@@ -169,9 +238,9 @@ namespace FinalProject
 
         private void TakePile(Queue<Card> hand)
         {
-            while (playingField.Count() > 0)
+            while (pile.Count() > 0)
             {
-                hand.Enqueue(playingField.Dequeue());
+                hand.Enqueue(pile.Dequeue());
             }
         }
 
@@ -192,6 +261,7 @@ namespace FinalProject
                 {
                     return true;
                 }
+                // Can add more rules to make game more interesting
             }
             return false;
         }

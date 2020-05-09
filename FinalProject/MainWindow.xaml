@@ -5,9 +5,10 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:FinalProject"
         mc:Ignorable="d"
-        Title="Card Game Simulator" Height="600" Width="800">
-    <Grid>
-        <Image HorizontalAlignment="Left" Height="120" Margin="350,46,0,0" VerticalAlignment="Top" Width="100"/>
+        Title="Card Game Simulator" Height="700" Width="600">
+    <Canvas x:Name="playingField">
+        <!--<Image HorizontalAlignment="Left" Height="120" Margin="350,46,0,0" VerticalAlignment="Top" Width="100"/>-->
+        <Ellipse x:Name="table" Fill="#FFF4F4F5" HorizontalAlignment="Left" Height="460" Stroke="Black" VerticalAlignment="Top" Width="460" Margin="68,46,0,0"/>
 
-    </Grid>
+    </Canvas>
 </Window>
