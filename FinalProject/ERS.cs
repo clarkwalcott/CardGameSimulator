@@ -29,7 +29,7 @@ namespace FinalProject
     {
         private Queue<Card> playingField;
         private int cardsLeft = -1;
-        private int turnResult = -1;
+        private int turnResult = -1;                // 1 if stack is won, 0 if lost, -1 otherwise       
 
         public ERS():base(GameType.ERS)
         {
@@ -43,7 +43,9 @@ namespace FinalProject
         // \return the player's hand as a List<Card>
         public override void Deal()
         {
-            for (int i = 0; i < deck.Cards.Count(); i++)
+            //Console.WriteLine("Initial Cards: " + deck.Cards.Count());
+            int numCards = deck.Cards.Count();
+            for (int i = 0; i < numCards; i++)
             {
                 Card card = deck.Cards.Dequeue();
                 if ((i % 2) == 0)
@@ -55,6 +57,8 @@ namespace FinalProject
                     dealersHand.Enqueue(card);
                 }
             }
+            //Console.WriteLine("Player's Hand Size: " + playersHand.Count());
+            //Console.WriteLine("Dealer's Hand Size: " + dealersHand.Count());
         }
 
         public override void GameStart()
@@ -65,11 +69,10 @@ namespace FinalProject
             while(!end)
             {
                 Console.WriteLine("Round #: " + round);
-
-                PlayersTurn();
-                DealersTurn();
-                
+                Turn("Player", playersHand);     // Player's turn
+                Turn("Dealer", dealersHand);     // Dealer's turn
                 round++;
+                
                 if(playersHand.Count() == 52 || dealersHand.Count() < 1)
                 {
                     winner = "Player";
@@ -84,43 +87,22 @@ namespace FinalProject
             Console.WriteLine(winner + " Wins!");
         }
 
-        private void PlayersTurn()
+        private void Turn(string name, Queue<Card> hand)
         {
-            Console.WriteLine("Player's Turn");
-            if (turnResult == 0)
+            Console.WriteLine(name + "'s Turn");
+            if (turnResult == 0)                                // If the previous player lost, the current player won
             {
-                Console.WriteLine("Player wins this stack!");
-                TakePile(playersHand);
+                Console.WriteLine(name + " wins this stack!");
+                TakePile(hand);
                 turnResult = -1;
             }
             else
             {
-                turnResult = PlayCard(playersHand);
-                if (turnResult == 1)
+                turnResult = PlayCard(hand);
+                if (turnResult == 1)                                // If player won
                 {
-                    Console.WriteLine("Player wins this stack!");
-                    TakePile(playersHand);
-                    turnResult = -1;
-                }
-            }
-        }
-
-        private void DealersTurn()
-        {
-            Console.WriteLine("Dealer's Turn");
-            if (turnResult == 0)
-            {
-                Console.WriteLine("Dealer wins this stack!");
-                TakePile(dealersHand);
-                turnResult = -1;
-            }
-            else
-            {
-                turnResult = PlayCard(dealersHand);
-                if (turnResult == 1)
-                {
-                    Console.WriteLine("Dealer wins this stack!");
-                    TakePile(dealersHand);
+                    Console.WriteLine(name + " wins this stack!");
+                    TakePile(hand);
                     turnResult = -1;
                 }
             }
@@ -138,8 +120,8 @@ namespace FinalProject
 
             if (hand.Count() > 0)
             {
+                //Console.WriteLine("Cards left: " + hand.Count());
                 card = hand.Dequeue();
-                suit = card.Suit;
                 value = card.Value;
                 playingField.Enqueue(card);
                 Console.Write("Played: ");
